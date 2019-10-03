@@ -1,13 +1,14 @@
 ---
 title: "Music Insights"
 author: "Daniel Hunt"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 First we need tidyverse to handle data importing and wrangling
 
 ```{r}
-install.packages("tidyverse")
 library("tidyverse")
 library("dplyr")
 library("tidyr")
