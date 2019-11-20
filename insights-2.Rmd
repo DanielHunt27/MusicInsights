@@ -1,0 +1,76 @@
+---
+title: "Music insights project, part 2"
+output:
+  html_document:
+    df_print: paged
+---
+First we load all the libraries we will need to use.
+```{r echo=FALSE, message=FALSE, error=FALSE, warning=FALSE, results='hide'}
+include <- function(library_name){
+  if( !(library_name %in% installed.packages()) )
+    install.packages(library_name) 
+  library(library_name, character.only=TRUE)
+}
+include("tidyverse")
+include("knitr")
+include("caret")
+purl("insights.Rmd", output = "part1.r")
+source("part1.r")
+```
+
+Now we will create a new column in the Person table that has every person's average rating that theyy gave songs.
+```{r}
+temp <- Ratings %>% group_by(psyeudonym) %>% summarise_at(vars(rating), funs(mean(.)))
+colnames(temp)[colnames(temp)=="rating"] <- "avg_rating"
+Person <- merge(Person, temp)
+```
+
+Now we will partition the data using random sampling into a training group and a testing group we will use later. The training group will have 75% of the data and will be what we use to create our model, then
+the testing group will be used to see how well that model works.
+```{r}
+set.seed(123)
+training.samples <- Person$avg_rating %>%
+  createDataPartition(p = 0.75, list = FALSE)
+train.data  <- Person[training.samples, ]
+test.data <- Person[-training.samples, ]
+```
+
+Now we will test it on a few different variables:
+```{r}
+model <- lm(avg_rating ~ sex, data = train.data)
+summary(model)
+# Make predictions and compute the R2, RMSE and MAE
+predictions <- model %>% predict(test.data)
+data.frame( R2 = R2(predictions, test.data$avg_rating),
+            RMSE = RMSE(predictions, test.data$avg_rating),
+            MAE = MAE(predictions, test.data$avg_rating))
+```
+
+
+```{r}
+model <- lm(avg_rating ~ academic_level, data = train.data)
+summary(model)
+# Make predictions and compute the R2, RMSE and MAE
+predictions <- model %>% predict(test.data)
+data.frame( R2 = R2(predictions, test.data$avg_rating),
+            RMSE = RMSE(predictions, test.data$avg_rating),
+            MAE = MAE(predictions, test.data$avg_rating))
+```
+
+
+```{r}
+model <- lm(avg_rating ~ year_born, data = train.data)
+summary(model)
+# Make predictions and compute the R2, RMSE and MAE
+predictions <- model %>% predict(test.data)
+data.frame( R2 = R2(predictions, test.data$avg_rating),
+            RMSE = RMSE(predictions, test.data$avg_rating),
+            MAE = MAE(predictions, test.data$avg_rating))
+```
+
+Now we will create a model using multiple linear regression.
+```{r}
+model <- lm(data=train.data, formula=avg_rating~sex+academic_major+academic_level+year_born)
+summary(model)
+```
+We can see that none of these variables are significant predictors.
